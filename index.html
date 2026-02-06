@@ -2,90 +2,88 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Volleyball Analysis Pro - Sync & Scouting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>VB Analysis - Professional</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
     <style>
         :root { --primary: #007bff; --bg: #f8f9fa; --dark: #343a40; }
-        body { font-family: "Meiryo", sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
+        body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
         
-        /* 動画エリア */
+        @media (max-width: 768px) {
+            body { flex-direction: column; overflow-y: auto; }
+            #video-side { width: 100%; position: sticky; top: 0; z-index: 100; }
+            #control-side { width: 100%; flex: none; overflow: visible; padding: 15px; }
+        }
+        
         #video-side { flex: 2; background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #player-box { width: 95%; aspect-ratio: 16 / 9; background: #222; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
-        .playlist-nav { display: flex; gap: 10px; margin-top: 15px; width: 320px; }
-        .btn-nav { flex: 1; background: #444; color: white; border: none; padding: 8px; cursor: pointer; border-radius: 4px; font-size: 0.8rem; }
-        .btn-nav:hover { background: #666; }
-
-        /* 操作エリア */
+        #player-box { width: 100%; aspect-ratio: 16 / 9; background: #222; }
         #control-side { flex: 1; padding: 25px; overflow-y: auto; background: white; border-left: 1px solid #ddd; box-sizing: border-box; }
-        .status-bar { padding: 12px; background: var(--dark); color: #00ff00; font-family: monospace; font-size: 0.85rem; margin-bottom: 20px; border-radius: 6px; }
-        .card { background: #fff; border: 1px solid #e1e4e8; border-radius: 8px; padding: 18px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        h3 { margin: 0 0 15px 0; font-size: 0.95rem; border-left: 4px solid var(--primary); padding-left: 10px; color: var(--dark); }
         
-        label { display: block; font-size: 0.8rem; font-weight: bold; color: #555; margin-bottom: 5px; }
-        select, input { width: 100%; padding: 10px; margin-bottom: 12px; border: 1px solid #ced4da; border-radius: 5px; font-size: 0.95rem; }
+        .status-bar { padding: 10px; background: var(--dark); color: #00ff00; font-family: monospace; font-size: 0.8rem; margin-bottom: 15px; border-radius: 6px; }
+        .card { background: #fff; border: 1px solid #e1e4e8; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        h3 { margin: 0 0 10px 0; font-size: 0.9rem; border-left: 4px solid var(--primary); padding-left: 10px; }
         
-        .playlist-ctrl { display: flex; align-items: center; justify-content: space-between; background: #e7f3ff; padding: 12px; border-radius: 6px; margin-bottom: 15px; }
+        select { width: 100%; padding: 12px; margin-bottom: 10px; border: 1px solid #ced4da; border-radius: 6px; font-size: 1rem; }
         
-        /* リストと色分け */
-        #instanceList { display: flex; flex-direction: column; gap: 8px; }
-        .instance-btn { text-align: left; padding: 12px; cursor: pointer; border: 1px solid #eee; border-radius: 6px; background: #fff; transition: 0.2s; border-left: 6px solid #ccc; }
-        .instance-btn.active { background: #eef6ff; font-weight: bold; border-color: var(--primary); }
+        .instance-btn { text-align: left; padding: 12px; cursor: pointer; border: 1px solid #eee; border-radius: 8px; background: #fff; margin-bottom: 8px; border-left: 8px solid #ccc; }
+        .instance-btn.active { background: #eef6ff; border-color: var(--primary); }
         
-        .color-serve { border-left-color: #007bff; }   /* 青 */
-        .color-attack { border-left-color: #dc3545; }  /* 赤 */
-        .color-block { border-left-color: #28a745; }   /* 緑 */
-        .color-receive { border-left-color: #ffc107; } /* 黄 */
+        .color-serve { border-left-color: #007bff; }
+        .color-attack { border-left-color: #dc3545; }
+        .color-block { border-left-color: #28a745; }
+        .color-receive { border-left-color: #ffc107; }
+
+        .btn-nav { padding: 10px; background: #444; color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer; flex: 1; }
     </style>
 </head>
 <body>
 
 <div id="video-side">
     <div id="player-box"><div id="player"></div></div>
-    <div class="playlist-nav">
+    <div style="display:flex; gap:5px; margin-top:10px; width:95%; padding-bottom:10px;">
         <button class="btn-nav" onclick="player.previousVideo()">◀ 前の試合</button>
         <button class="btn-nav" onclick="player.nextVideo()">次の試合 ▶</button>
     </div>
 </div>
 
 <div id="control-side">
-    <div id="status-msg" class="status-bar">PLAYLIST READY: XMLを読み込んでください</div>
+    <div id="status-msg" class="status-bar">試合を選択してください</div>
     
     <div class="card">
-        <h3>1. コーディングデータ読込</h3>
-        <label for="fileInput">XMLファイルを選択</label>
-        <input type="file" id="fileInput" accept=".xml">
+        <h3>1. 試合データ選択</h3>
+        <select id="matchSelect" onchange="loadGameXML(this.value)">
+            <option value="">-- 試合を選択 --</option>
+            <option value="game1.xml">2026/01/31 試合 A</option>
+            <option value="game2.xml">2026/02/01 試合 B</option>
+        </select>
     </div>
 
     <div class="card" id="filterArea" style="display:none;">
         <h3>2. 絞り込みフィルター</h3>
-        <label for="teamFilter">チーム選択</label>
-        <select id="teamFilter"><option value="">すべてのチーム</option></select>
+        <label style="font-size:0.7rem; color:#666;">チーム</label>
+        <select id="teamFilter"></select>
         
-        <label for="playerFilter">選手選択</label>
-        <select id="playerFilter"><option value="">すべての選手</option></select>
+        <label style="font-size:0.7rem; color:#666;">選手</label>
+        <select id="playerFilter"></select>
 
-        <label for="skillFilter">スキル選択</label>
-        <select id="skillFilter"><option value="">すべてのスキル</option></select>
+        <label style="font-size:0.7rem; color:#666;">スキル</label>
+        <select id="skillFilter"></select>
+        
+        <label style="display:flex; align-items:center; font-size:0.9rem; margin-top:10px; cursor:pointer;">
+            <input type="checkbox" id="autoPlay" style="width:auto; margin-right:10px;"> 連続再生モード
+        </label>
     </div>
 
-    <div class="card">
-        <div class="playlist-ctrl">
-            <label for="autoPlay" style="margin:0; cursor:pointer;">連続再生モード</label>
-            <input type="checkbox" id="autoPlay" style="width:auto; margin:0; cursor:pointer;">
-        </div>
-        <h3>3. プレーリスト</h3>
-        <div id="instanceList">ここにシーンが表示されます</div>
-    </div>
+    <div id="instanceList"></div>
 </div>
 
 <script>
-    // プレイリストIDを直接埋め込み
     const PLAYLIST_ID = 'PLEFay6yjw4RVg36xqudosi_s4cV-u7S99';
-
-    let player;
-    let allData = [];
-    let filteredData = [];
-    let currentIndex = -1;
-    let checkInterval;
+    let player, allData = [], filteredData = [], currentIndex = -1, checkInterval;
+    
+    // 削除したいキーワードのリスト
+    const EXCLUDE_KEYWORDS = ["substitution", "timeout", "end of set", "set point"];
 
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
@@ -94,46 +92,36 @@
     function onYouTubeIframeAPIReady() {
         player = new YT.Player('player', {
             height: '100%', width: '100%',
-            playerVars: { 
-                'listType': 'playlist',
-                'list': PLAYLIST_ID,
-                'playsinline': 1,
-                'rel': 0,
-                'enablejsapi': 1,
-                'origin': window.location.origin 
-            },
-            events: { 
-                'onReady': () => { updateStatus("READY: プレイリスト読み込み完了"); },
-                'onError': (e) => { updateStatus("Error: 動画の再生に制限があります(" + e.data + ")"); }
-            }
+            playerVars: { 'listType': 'playlist', 'list': PLAYLIST_ID, 'playsinline': 1, 'enablejsapi': 1 },
+            events: { 'onReady': () => { updateStatus("READY: 試合を選択してください"); } }
         });
     }
 
     function updateStatus(msg) { document.getElementById('status-msg').innerText = msg; }
 
-    document.getElementById('fileInput').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (evt) => {
-            parseVolleyballXML(evt.target.result);
-            document.getElementById('filterArea').style.display = 'block';
-        };
-        reader.readAsText(file);
-    });
+    function loadGameXML(fileName) {
+        if (!fileName) return;
+        fetch(fileName)
+            .then(res => res.text())
+            .then(xml => {
+                parseVolleyballXML(xml);
+                document.getElementById('filterArea').style.display = 'block';
+                updateStatus("LOADED: " + fileName);
+            })
+            .catch(() => alert("読込エラー: " + fileName));
+    }
 
     function parseVolleyballXML(xmlString) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlString, "text/xml");
         const instances = Array.from(xmlDoc.getElementsByTagName("instance"));
         allData = [];
-        const teamMap = {};
-        const skillSet = new Set();
 
         instances.forEach(inst => {
-            const start = inst.getElementsByTagName("start")[0]?.textContent || "0";
-            const end = inst.getElementsByTagName("end")[0]?.textContent || "0";
             const code = inst.getElementsByTagName("code")[0]?.textContent || "";
+            // 不要な項目を除外
+            if (EXCLUDE_KEYWORDS.some(key => code.toLowerCase().includes(key))) return;
+
             let pName = "", tName = "";
             Array.from(inst.getElementsByTagName("label")).forEach(l => {
                 const g = l.getElementsByTagName("group")[0]?.textContent || "";
@@ -141,33 +129,50 @@
                 if (g.toLowerCase().includes("player")) pName = t.trim();
                 if (g.toLowerCase().includes("team name")) tName = t.trim();
             });
+
             if (pName) {
-                const obj = { start: parseFloat(start), end: parseFloat(end), code, pName, tName: tName || "不明" };
-                allData.push(obj);
-                skillSet.add(code);
-                if (!teamMap[obj.tName]) teamMap[obj.tName] = new Set();
-                teamMap[obj.tName].add(pName);
+                allData.push({
+                    start: parseFloat(inst.getElementsByTagName("start")[0]?.textContent || "0"),
+                    end: parseFloat(inst.getElementsByTagName("end")[0]?.textContent || "0"),
+                    code, pName, tName: tName || "不明"
+                });
             }
         });
 
-        const ts = document.getElementById('teamFilter');
-        while (ts.options.length > 1) ts.remove(1);
-        Object.keys(teamMap).sort().forEach(t => ts.add(new Option(t, t)));
-        
-        const ss = document.getElementById('skillFilter');
-        while (ss.options.length > 1) ss.remove(1);
-        Array.from(skillSet).sort().forEach(s => ss.add(new Option(s, s)));
+        initTeamFilter();
+    }
 
+    function initTeamFilter() {
+        const teams = [...new Set(allData.map(d => d.tName))].sort();
+        const ts = document.getElementById('teamFilter');
+        ts.innerHTML = '<option value="">すべてのチーム</option>';
+        teams.forEach(t => ts.add(new Option(t, t)));
+        
         ts.onchange = () => {
-            const ps = document.getElementById('playerFilter');
-            while (ps.options.length > 1) ps.remove(1);
-            if(teamMap[ts.value]) Array.from(teamMap[ts.value]).sort().forEach(p => ps.add(new Option(p, p)));
+            updatePlayerAndSkillFilters();
             render();
         };
-        document.getElementById('playerFilter').onchange = render;
-        ss.onchange = render;
-        updateStatus("XML LOADED: " + allData.length + " scenes");
+        updatePlayerAndSkillFilters();
         render();
+    }
+
+    function updatePlayerAndSkillFilters() {
+        const selectedTeam = document.getElementById('teamFilter').value;
+        const dataForTeam = selectedTeam ? allData.filter(d => d.tName === selectedTeam) : allData;
+
+        // 選手フィルター更新
+        const players = [...new Set(dataForTeam.map(d => d.pName))].sort();
+        const ps = document.getElementById('playerFilter');
+        ps.innerHTML = '<option value="">すべての選手</option>';
+        players.forEach(p => ps.add(new Option(p, p)));
+        ps.onchange = render;
+
+        // スキルフィルター更新（選んだチームのデータのみに基づく）
+        const skills = [...new Set(dataForTeam.map(d => d.code))].sort();
+        const ss = document.getElementById('skillFilter');
+        ss.innerHTML = '<option value="">すべてのスキル</option>';
+        skills.forEach(s => ss.add(new Option(s, s)));
+        ss.onchange = render;
     }
 
     function render() {
@@ -178,44 +183,30 @@
         list.innerHTML = '';
 
         filteredData = allData.filter(d => 
-            (tf===""||d.tName===tf) && 
-            (pf===""||d.pName===pf) && 
-            (sf===""||d.code===sf)
+            (tf==="" || d.tName === tf) && 
+            (pf==="" || d.pName === pf) && 
+            (sf==="" || d.code === sf)
         );
 
         filteredData.forEach((d, i) => {
             const btn = document.createElement('div');
-            // スキル名に特定の文字が含まれる場合に色分け
-            let colorClass = "color-default";
-            if(d.code.includes("Serve")) colorClass = "color-serve";
-            if(d.code.includes("Attack")) colorClass = "color-attack";
-            if(d.code.includes("Block")) colorClass = "color-block";
-            if(d.code.includes("Receive")) colorClass = "color-receive";
-
-            btn.className = `instance-btn ${colorClass}`;
+            let color = d.code.includes("Serve") ? "color-serve" : d.code.includes("Attack") ? "color-attack" : d.code.includes("Block") ? "color-block" : d.code.includes("Receive") ? "color-receive" : "";
+            btn.className = `instance-btn ${color}`;
             btn.id = 'inst-' + i;
             const time = Math.floor(d.start/60) + ":" + Math.floor(d.start%60).toString().padStart(2,'0');
-            btn.innerHTML = `<span style="color:var(--primary); font-weight:bold; margin-right:10px;">${time}</span> <b>${d.pName}</b><br><small style="color:#666">${d.code}</small>`;
+            btn.innerHTML = `<b>${time} ${d.pName}</b><br><small>${d.code}</small>`;
             btn.onclick = () => playInst(i);
             list.appendChild(btn);
         });
     }
 
     function playInst(i) {
-        currentIndex = i;
-        const d = filteredData[i];
+        if (i < 0 || i >= filteredData.length) return;
+        currentIndex = i; const d = filteredData[i];
         document.querySelectorAll('.instance-btn').forEach(b => b.classList.remove('active'));
         document.getElementById('inst-' + i)?.classList.add('active');
         player.seekTo(Math.max(0, d.start - 3), true);
         player.playVideo();
         if (checkInterval) clearInterval(checkInterval);
         checkInterval = setInterval(() => {
-            if (player.getCurrentTime() >= d.end) {
-                if (document.getElementById('autoPlay').checked) playInst(currentIndex + 1);
-                else { player.pauseVideo(); clearInterval(checkInterval); }
-            }
-        }, 500);
-    }
-</script>
-</body>
-</html>
+            if
