@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>VB Analysis - Auto List</title>
+    <title>VB Analysis - Full Auto</title>
     <style>
         :root { --primary: #007bff; --bg: #f8f9fa; --dark: #343a40; }
         body { font-family: sans-serif; display: flex; height: 100vh; margin: 0; background: var(--bg); overflow: hidden; }
@@ -24,17 +24,12 @@
         .color-attack { border-left-color: #dc3545; }
         .color-block { border-left-color: #28a745; }
         .color-receive { border-left-color: #ffc107; }
-        .btn-nav { padding: 10px; background: #444; color: white; border: none; border-radius: 4px; font-size: 0.75rem; cursor: pointer; flex: 1; }
     </style>
 </head>
 <body>
 
 <div id="video-side">
     <div id="player-box"><div id="player"></div></div>
-    <div style="display:flex; gap:5px; margin-top:10px; width:95%; padding-bottom:10px;">
-        <button class="btn-nav" onclick="player.previousVideo()">◀ 前の試合</button>
-        <button class="btn-nav" onclick="player.nextVideo()">次の試合 ▶</button>
-    </div>
 </div>
 
 <div id="control-side">
@@ -42,8 +37,8 @@
     
     <div class="card">
         <h3>1. 試合を選択</h3>
-        <select id="matchSelect" onchange="loadGameXML(this.value)">
-            <option value="">-- 試合リスト更新中 --</option>
+        <select id="matchSelect" onchange="onMatchChange(this.value)">
+            <option value="">-- 試合を選択 --</option>
         </select>
     </div>
 
@@ -61,11 +56,11 @@
 </div>
 
 <script>
-    const PLAYLIST_ID = 'PLEFay6yjw4RVg36xqudosi_s4cV-u7S99';
     let player, allData = [], filteredData = [], currentIndex = -1, checkInterval;
+    let matchMap = {}; // XMLファイル名と動画IDの対応表
     const EXCLUDE_KEYWORDS = ["substitution", "timeout", "end of set"];
 
-    // 1. YouTube API Load
+    // YouTube API Load
     const tag = document.createElement('script');
     tag.src = "https://www.youtube.com/iframe_api";
     document.head.appendChild(tag);
@@ -73,47 +68,54 @@
     window.onYouTubeIframeAPIReady = function() {
         player = new YT.Player('player', {
             height: '100%', width: '100%',
-            playerVars: { 'listType': 'playlist', 'list': PLAYLIST_ID, 'playsinline': 1 },
+            playerVars: { 'playsinline': 1, 'rel': 0, 'enablejsapi': 1 },
             events: { 'onReady': () => { 
                 updateStatus("READY: 試合を選択してください");
-                fetchMatchList(); // YouTubeの準備ができたらリストを読みに行く
+                fetchMatchList(); 
             } }
         });
     }
 
-    // 2. 試合リスト(list.txt)の読み込み
+    // 試合リストの読み込み
     function fetchMatchList() {
         fetch('list.txt')
             .then(res => res.text())
             .then(data => {
-                const lines = data.split('\n').filter(line => line.trim() !== "");
+                const lines = data.split('\n').filter(line => line.trim() !== "" && line.includes(','));
                 const select = document.getElementById('matchSelect');
                 select.innerHTML = '<option value="">-- 試合を選択 --</option>';
+                
                 lines.forEach(line => {
-                    const fileName = line.trim();
-                    // ファイル名を表示名として使う
-                    select.add(new Option(fileName.replace('.xml', ''), fileName));
+                    const [xmlFile, videoId] = line.split(',').map(s => s.trim());
+                    matchMap[xmlFile] = videoId;
+                    select.add(new Option(xmlFile.replace('.xml', ''), xmlFile));
                 });
             })
-            .catch(() => {
-                updateStatus("Error: list.txt が見つかりません");
-                document.getElementById('matchSelect').innerHTML = '<option>list.txtを作成してください</option>';
-            });
+            .catch(() => updateStatus("Error: list.txt の形式が正しくありません"));
     }
 
-    function updateStatus(msg) { document.getElementById('status-msg').innerText = msg; }
+    // 選択変更時の処理
+    function onMatchChange(xmlFile) {
+        if (!xmlFile) return;
+        const videoId = matchMap[xmlFile];
+        
+        // 動画の切り替え
+        if (videoId) {
+            player.loadVideoById(videoId);
+        }
 
-    function loadGameXML(fileName) {
-        if (!fileName) return;
-        fetch(fileName)
+        // XMLの読み込み
+        fetch(xmlFile)
             .then(res => res.text())
             .then(xml => {
                 parseVolleyballXML(xml);
                 document.getElementById('filterArea').style.display = 'block';
-                updateStatus("LOADED: " + fileName);
+                updateStatus("LOADED: " + xmlFile);
             })
-            .catch(() => alert("読込エラー: " + fileName));
+            .catch(() => alert("XML読込エラー: " + xmlFile));
     }
+
+    function updateStatus(msg) { document.getElementById('status-msg').innerText = msg; }
 
     function parseVolleyballXML(xmlString) {
         const parser = new DOMParser();
@@ -141,30 +143,29 @@
                 });
             }
         });
-        initTeamFilter();
+        initFilters();
     }
 
-    function initTeamFilter() {
-        const teams = [...new Set(allData.map(d => d.tName))].sort();
+    function initFilters() {
         const ts = document.getElementById('teamFilter');
         ts.innerHTML = '<option value="">すべてのチーム</option>';
-        teams.forEach(t => ts.add(new Option(t, t)));
-        ts.onchange = () => { updatePlayerAndSkillFilters(); render(); };
-        updatePlayerAndSkillFilters(); render();
+        [...new Set(allData.map(d => d.tName))].sort().forEach(t => ts.add(new Option(t, t)));
+        ts.onchange = () => { updateSubFilters(); render(); };
+        updateSubFilters(); render();
     }
 
-    function updatePlayerAndSkillFilters() {
+    function updateSubFilters() {
         const selectedTeam = document.getElementById('teamFilter').value;
-        const dataForTeam = selectedTeam ? allData.filter(d => d.tName === selectedTeam) : allData;
+        const data = selectedTeam ? allData.filter(d => d.tName === selectedTeam) : allData;
         
         const ps = document.getElementById('playerFilter');
         ps.innerHTML = '<option value="">すべての選手</option>';
-        [...new Set(dataForTeam.map(d => d.pName))].sort().forEach(p => ps.add(new Option(p, p)));
+        [...new Set(data.map(d => d.pName))].sort().forEach(p => ps.add(new Option(p, p)));
         ps.onchange = render;
 
         const ss = document.getElementById('skillFilter');
         ss.innerHTML = '<option value="">すべてのスキル</option>';
-        [...new Set(dataForTeam.map(d => d.code))].sort().forEach(s => ss.add(new Option(s, s)));
+        [...new Set(data.map(d => d.code))].sort().forEach(s => ss.add(new Option(s, s)));
         ss.onchange = render;
     }
 
